@@ -12,8 +12,8 @@
 #include <wayland-client.h>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-#include "xdg-shell-client-protocol.h"
+#include "../include/stb_image.h"
+#include "../build//xdg-shell-client-protocol.h"
 
 static struct wl_compositor *compositor = NULL;
 static struct wl_shm *shm = NULL;

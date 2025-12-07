@@ -1,0 +1,13 @@
+# Build artifacts
+/build/
+*.o
+*.so
+*.a
+
+# Bianry files
+/layer
+/imageviewer
+
+# Editor files
+*.swp
+*~

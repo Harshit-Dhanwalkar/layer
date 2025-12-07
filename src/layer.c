@@ -186,6 +186,19 @@ static int imageviewer_exists() {
     return 1;
   }
 
+  char layer_path[4096];
+  if (readlink("/proc/self/exe", layer_path, sizeof(layer_path) - 1) != -1) {
+    char *last_slash = strrchr(layer_path, '/');
+    if (last_slash) {
+      *last_slash = '\0';
+      char full_path[4096];
+      snprintf(full_path, sizeof(full_path), "%s/imageviewer", layer_path);
+      if (access(full_path, X_OK) == 0) {
+        return 1;
+      }
+    }
+  }
+
   char *path = getenv("PATH");
   if (path) {
     char *path_copy = strdup(path);
@@ -232,17 +245,14 @@ static void show() {
     if (strcmp(imageviewer_cmd, "./imageviewer") == 0) {
       // Use built-in imageviewer
       char *args[] = {imageviewer_cmd, clean_path, NULL};
-      /* char *args[] = {imageviewer_cmd, list[sel], NULL}; */
       execvp(args[0], args);
       // If built-in fails, try from PATH
       char *args2[] = {"imageviewer", clean_path, NULL};
-      /* char *args2[] = {"imageviewer", list[sel], NULL}; */
       execvp("imageviewer", args2);
       perror("imageviewer");
     } else {
       // Use external image viewer (sxiv, viu, etc.)
       char *args[] = {imageviewer_cmd, clean_path, NULL};
-      /* char *args[] = {imageviewer_cmd, list[sel], NULL}; */
       execvp(imageviewer_cmd, args);
       perror(imageviewer_cmd);
     }
@@ -250,7 +260,6 @@ static void show() {
     // Last resort: try xdg-open
     fprintf(stderr, "Falling back to xdg-open...\n");
     char *args3[] = {"xdg-open", clean_path, NULL};
-    /* char *args3[] = {"xdg-open", list[sel], NULL}; */
     execvp("xdg-open", args3);
     exit(1);
   } else if (pid > 0) {
