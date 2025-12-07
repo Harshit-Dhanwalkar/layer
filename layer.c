@@ -20,7 +20,9 @@ static char current_dir[4096] = "";
 static char wallsetter[256] = "swaybg"; // feh
 static char imageviewer_cmd[256] = "./imageviewer";
 static int first_time = 1;
+
 static void clean_filepath(char *path);
+static void set_wallpaper_from_file(const char *file);
 
 static int compare(const void *a, const void *b) {
   const char *file_a = strrchr(*(char (*)[4096])a, '/') + 1;
@@ -148,7 +150,7 @@ static void draw() {
   mvprintw(0, 0, "Directory: %s | Setter: %s | Viewer: %s", current_dir,
            wallsetter, imageviewer_cmd);
   mvprintw(1, 0,
-           "d:Change dir | Enter:Set wallpaper | v:View | k:Kill wallpaper | "
+           "d:Change dir | Enter:Set wallpaper | v:View| m:Dmenu | k:Kill wallpaper | "
            "q:Quit");
 
   if (n == 0) {
@@ -162,7 +164,8 @@ static void draw() {
       strncpy(display_name, filename, sizeof(display_name) - 1);
       display_name[sizeof(display_name) - 1] = '\0';
 
-      if (strlen(display_name) > COLS - 10) {
+      /* if ((int)strlen(display_name) > COLS - 10) { */
+      if (strlen(display_name) > (size_t)(COLS - 10)) {
         display_name[COLS - 13] = '.';
         display_name[COLS - 12] = '.';
         display_name[COLS - 11] = '.';
@@ -293,7 +296,8 @@ static void kill_wallpaper_processes() {
 }
 
 static void clean_filepath(char *path) {
-  if (!path || !*path) return;
+  if (!path || !*path)
+    return;
 
   char *src = path;
   char *dst = path;
@@ -314,8 +318,8 @@ static void clean_filepath(char *path) {
   *dst = '\0';
 
   // Remove trailing slash if present (except for root '/')
-  if (dst > path + 1 && *(dst-1) == '/') {
-    *(dst-1) = '\0';
+  if (dst > path + 1 && *(dst - 1) == '/') {
+    *(dst - 1) = '\0';
   }
 }
 
@@ -353,7 +357,6 @@ static void set_wallpaper_from_file(const char *file) {
     }
 
     // Child process
-    // int devnull = open("/dev/null", O_WRONLY);
     int devnull = open("/dev/null", O_RDWR);
     if (devnull >= 0) {
       dup2(devnull, STDOUT_FILENO);
@@ -365,37 +368,28 @@ static void set_wallpaper_from_file(const char *file) {
     setsid();
 
     if (strcmp(wallsetter, "feh") == 0) {
-      /* char *args[] = {"feh", "--bg-scale", (char *)file, NULL}; */
       char *args[] = {"feh", "--bg-scale", clean_path, NULL};
       execvp("feh", args);
       perror("feh failed");
     } else {
-      /* char *args[] = {"swaybg", "-m", "fill", "-i", (char *)file, NULL}; */
       char *args[] = {"swaybg", "-m", "fill", "-i", clean_path, NULL};
       execvp("swaybg", args);
       perror("swaybg failed");
     }
-    // If execvp fails log the error
-    // perror("execvp");
     exit(1);
   } else if (pid > 0) {
     // Parent process - daemonized
     /* waitpid(pid, NULL, 0); */
-    /* save_last_wallpaper(file); */
     save_last_wallpaper(clean_path);
     usleep(50000); // 50ms
 
     if (isatty(STDOUT_FILENO)) {
-     char *filename = strrchr(clean_path, '/');
+      char *filename = strrchr(clean_path, '/');
       if (filename) {
         filename++;
       } else {
         filename = clean_path;
       }
-      /* mvprintw(LINES - 1, 0, "Wallpaper set! (daemonized) %s", strrchr(file, '/') + 1); */
-      mvprintw(LINES - 1, 0, "Wallpaper set! %s", filename);
-      clrtoeol();
-      refresh();
     } else {
       printf("Wallpaper set: %s\n", clean_path);
     }
@@ -419,6 +413,74 @@ static void restore_last_wallpaper() {
     }
   } else {
     fprintf(stderr, "No last wallpaper saved.\n");
+  }
+}
+
+static void set_wallpaper_dmenu() {
+  if (n == 0) {
+    fprintf(stderr, "No images found in directory: %s\n", current_dir);
+    return;
+  }
+
+  char temp_file[] = "/tmp/layer_dmenu_XXXXXX";
+  int temp_fd = mkstemp(temp_file);
+  if (temp_fd == -1) {
+    perror("mkstemp");
+    return;
+  }
+
+  char input_file[] = "/tmp/layer_input_XXXXXX";
+  int input_fd = mkstemp(input_file);
+  if (input_fd == -1) {
+    close(temp_fd);
+    unlink(temp_file);
+    perror("mkstemp");
+    return;
+  }
+
+  for (int i = 0; i < n; i++) {
+    char *filename = strrchr(list[i], '/') + 1;
+    dprintf(input_fd, "%s\n", filename);
+  }
+  close(input_fd);
+
+  // Run dmenu
+  char command[512];
+  snprintf(command, sizeof(command),
+           "cat '%s' | dmenu -l 20 -p 'Select wallpaper:' > '%s'", input_file,
+           temp_file);
+
+  int ret = system(command);
+  if (ret == -1) {
+    perror("system");
+    unlink(temp_file);
+    unlink(input_file);
+    return;
+  }
+
+  // Read selected filename
+  FILE *fp = fopen(temp_file, "r");
+  char selected[256] = "";
+  if (fp) {
+    if (fgets(selected, sizeof(selected), fp)) {
+      selected[strcspn(selected, "\n")] = '\0';
+    }
+    fclose(fp);
+  }
+
+  // Clean up temp files
+  unlink(temp_file);
+  unlink(input_file);
+
+  // Find and set the selected wallpaper
+  if (selected[0]) {
+    for (int i = 0; i < n; i++) {
+      char *filename = strrchr(list[i], '/') + 1;
+      if (strcmp(filename, selected) == 0) {
+        set_wallpaper_from_file(list[i]);
+        break;
+      }
+    }
   }
 }
 
@@ -486,8 +548,9 @@ static void first_time_setup() {
   // Auto-detect session type
   char *xdg_session = getenv("XDG_SESSION_TYPE");
   char *wayland_display = getenv("WAYLAND_DISPLAY");
-  int is_wayland = (xdg_session && strcasecmp(xdg_session, "wayland") == 0) || wayland_display;
-  
+  int is_wayland = (xdg_session && strcasecmp(xdg_session, "wayland") == 0) ||
+                   wayland_display;
+
   if (is_wayland) {
     printf("Detected: Wayland session (using swaybg as default)\n");
     strcpy(wallsetter, "swaybg");
@@ -580,6 +643,7 @@ static void print_help() {
   printf("  -r, --restore  Restore last set wallpaper\n");
   printf("  -i VIEWER      Set default image viewer (e.g., sxiv, viu, "
          "./imageviewer)\n");
+  printf("  -m, --dmenu    Launch dmenu for wallpaper selection\n");
   printf(
       "\nIf DIRECTORY is provided, it will be set as the image directory.\n");
   printf(
@@ -591,6 +655,8 @@ static void print_version() { printf("layer version %s\n", VERSION); }
 int main(int argc, char **argv) {
   signal(SIGINT, SIG_IGN);
   signal(SIGTERM, SIG_IGN);
+
+  int dmenu_mode = 0;
 
   load_config();
 
@@ -606,6 +672,9 @@ int main(int argc, char **argv) {
                strcmp(argv[i], "-r") == 0) {
       restore_last_wallpaper();
       return 0;
+    } else if (strcmp(argv[i], "--dmenu") == 0 ||
+               strcmp(argv[i], "-m") == 0) {
+      dmenu_mode = 1;
     } else if (strcmp(argv[i], "-i") == 0) {
       if (i + 1 < argc) {
         strcpy(imageviewer_cmd, argv[i + 1]);
@@ -631,6 +700,15 @@ int main(int argc, char **argv) {
   }
 
   n = scan(current_dir);
+
+  if (dmenu_mode) {
+    if (n == 0) {
+      fprintf(stderr, "No images found in directory: %s\n", current_dir);
+      return 1;
+    }
+    set_wallpaper_dmenu();
+    return 0;
+  }
 
   initscr();
   cbreak();
@@ -672,6 +750,10 @@ int main(int argc, char **argv) {
     }
     if (ch == 'd') {
       change_config();
+      draw();
+    }
+    if (ch == 'm') {
+      set_wallpaper_dmenu();
       draw();
     }
   }

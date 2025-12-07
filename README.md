@@ -9,7 +9,7 @@ A lightweight terminal-based wallpaper switcher and image viewer written in C, s
 - **Built-in Image Viewer**: Native image viewer for X11 and Wayland
 - **Session Detection**: Automatically detects X11 or Wayland session
 - **Configuration Persistence**: Remembers your settings and last wallpaper
-- **Keyboard-centric**: Fully controllable from keyboard
+- **dmenu Integration**: Select wallpapers using dmenu for quick selection
 
 ---
 
@@ -55,6 +55,11 @@ This will build:
 # Restore last set wallpaper
 ./layer --restore
 
+# Launch dmenu for wallpaper selection
+./layer --dmenu
+# or
+./layer -m
+
 # Show help
 ./layer --help
 
@@ -67,6 +72,7 @@ This will build:
 - `layer`: ncurses, libX11 (for X11 fallback)
 - `imageviewer`: libX11, libwayland-client
 - `Runtime`: feh (X11) or swaybg (Wayland) for setting wallpapers
+- `dmenu` (Optional): for dmenu integration
 
 ---
 
