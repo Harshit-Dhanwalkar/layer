@@ -223,8 +223,7 @@ static void show() {
     return;
 
   if (strcmp(imageviewer_cmd, "./imageviewer") == 0 && !imageviewer_exists()) {
-    mvprintw(LINES - 1, 0,
-             "Error: imageviewer not found. Build it with 'make'");
+    mvprintw(LINES - 1, 0, "Error: imageviewer not found.'");
     clrtoeol();
     refresh();
     getch();

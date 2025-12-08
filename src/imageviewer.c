@@ -236,7 +236,7 @@ static int run_wayland_viewer(const char *path) {
     int display_w = w;
     int display_h = h;
 
-    fprintf(stderr, "[imageviewer] Original: %dx%d, Display: %dx%d\n", 
+    fprintf(stderr, "[imageviewer] Original: %dx%d, Display: %dx%d\n",
     w, h, display_w, display_h);
 
     if (w > 1920 || h > 1080) {
@@ -246,7 +246,7 @@ static int run_wayland_viewer(const char *path) {
         }
         display_w = (int)(w * scale);
         display_h = (int)(h * scale);
-        fprintf(stderr, "[imageviewer] Scaling image from %dx%d to %dx%d\n", 
+        fprintf(stderr, "[imageviewer] Scaling image from %dx%d to %dx%d\n",
                 w, h, display_w, display_h);
     }
 
@@ -453,10 +453,10 @@ int main(int argc, char **argv) {
     const char *path = argv[1];
 
     if (is_wayland()) {
-        printf("[imageviewer] Detected Wayland session\n");
+        // printf("[imageviewer] Detected Wayland session\n");
         return run_wayland_viewer(path);
     } else if (is_x11()) {
-        printf("[imageviewer] Detected X11 session\n");
+        // printf("[imageviewer] Detected X11 session\n");
         return run_x11_viewer(path);
     }
 

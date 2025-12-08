@@ -84,6 +84,7 @@ The image viewer requires Wayland protocol files. These are automatically genera
 # The Makefile automatically runs these commands:
 wayland-scanner client-header xdg-shell.xml xdg-shell-client-protocol.h
 wayland-scanner private-code xdg-shell.xml xdg-shell-protocol.c
+wayland-scanner client-header wlr-layer-shell-unstable-v1.xml wlr-layer-shell-unstable-v1-client-protocol.h
 ```
 
 This will create:
@@ -91,6 +92,8 @@ This will create:
 ```bash
 xdg-shell-client-protocol.h
 xdg-shell-protocol.c
+wlr-layer-shell-unstable-v1-client-protocol.h
 ```
 
-Get `xdg-shell.xml` from [wayland-protocols](https://git.uibk.ac.at/csba3673/visualcomputing/-/blob/dev/05/external/glfw/deps/wayland/xdg-shell.xml)
+- Get `xdg-shell.xml` from [wayland-protocols](https://git.uibk.ac.at/csba3673/visualcomputing/-/blob/dev/05/external/glfw/deps/wayland/xdg-shell.xml)
+- Get `wlr-layer-shell-unstable-v1-client-protocol.xml` from [wayland-protocols](https://github.com/swaywm/wlr-protocols/blob/master/unstable/wlr-layer-shell-unstable-v1.xml)
