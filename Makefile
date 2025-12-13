@@ -10,7 +10,7 @@ SRC_DIR = src
 INCLUDE_DIR = include
 PROTOCOLS_DIR = protocols
 BUILD_DIR = build
-BIN_DIR = .
+BIN_DIR = build
 
 # Targets
 TARGETS = $(BIN_DIR)/layer $(BIN_DIR)/imageviewer $(BIN_DIR)/clock-widget
